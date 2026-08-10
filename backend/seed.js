@@ -7,6 +7,7 @@ const pool = new Pool({
   user: process.env.PGUSER || 'postgres',
   password: process.env.PGPASSWORD || '123',
   database: process.env.PGDATABASE || 'Help-Desk',
+  ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
 });
 
 async function seed() {
