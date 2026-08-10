@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = 'https://helpdesk-pro-api.onrender.com/api';
 
 async function request(endpoint, options = {}) {
   let res
