@@ -1,4 +1,4 @@
-const { describe, it, after } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const request = require('supertest');
 const { Pool } = require('pg');
@@ -12,8 +12,6 @@ const pool = new Pool({
   database: process.env.PGDATABASE,
 });
 
-const createdTickets = [];
-
 const validTicket = {
   title: 'Teste de API - Computador não liga',
   description: 'Ticket criado pela suíte de testes de API',
@@ -23,33 +21,49 @@ const validTicket = {
   priority_id: 1,
 };
 
-async function cleanTickets() {
-  for (const id of createdTickets) {
+const createdTicketIds = [];
+
+async function createTestTicket() {
+  const res = await request(app).post('/tickets').send(validTicket);
+  assert.strictEqual(res.status, 201);
+  createdTicketIds.push(res.body.ticket.id);
+  return res.body.ticket.id;
+}
+
+async function cleanCreatedTickets() {
+  for (const id of createdTicketIds) {
     await pool.query('DELETE FROM tickets WHERE id = $1', [id]);
   }
-  createdTickets.length = 0;
+  createdTicketIds.length = 0;
 }
 
 describe('GET /tickets', () => {
+  before(createTestTicket);
+  after(cleanCreatedTickets);
+
   it('retorna a lista de tickets (200)', async () => {
     const res = await request(app).get('/tickets');
 
     assert.strictEqual(res.status, 200);
     assert.ok(Array.isArray(res.body));
-    assert.ok(res.body.length > 0);
+    assert.ok(res.body.some((t) => t.title === validTicket.title));
   });
 });
 
 describe('GET /tickets/:id', () => {
-  it('retorna ticket existente (200)', async () => {
-    const list = await request(app).get('/tickets');
-    const id = list.body[0].id;
+  let ticketId;
 
-    const res = await request(app).get(`/tickets/${id}`);
+  before(async () => {
+    ticketId = await createTestTicket();
+  });
+  after(cleanCreatedTickets);
+
+  it('retorna ticket existente (200)', async () => {
+    const res = await request(app).get(`/tickets/${ticketId}`);
 
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.ok, true);
-    assert.strictEqual(res.body.ticket.id, id);
+    assert.strictEqual(res.body.ticket.id, ticketId);
   });
 
   it('retorna 404 para ticket inexistente', async () => {
@@ -61,7 +75,7 @@ describe('GET /tickets/:id', () => {
 });
 
 describe('POST /tickets', () => {
-  after(cleanTickets);
+  after(cleanCreatedTickets);
 
   it('cria um ticket com sucesso (201) e gera código TKT-', async () => {
     const res = await request(app).post('/tickets').send(validTicket);
@@ -69,7 +83,7 @@ describe('POST /tickets', () => {
     assert.strictEqual(res.status, 201);
     assert.strictEqual(res.body.ok, true);
     assert.match(res.body.ticket.code, /^TKT-\d+$/);
-    createdTickets.push(res.body.ticket.id);
+    createdTicketIds.push(res.body.ticket.id);
   });
 
   it('rejeita ticket sem campos obrigatórios (400)', async () => {
@@ -83,12 +97,10 @@ describe('POST /tickets', () => {
 });
 
 describe('PUT /tickets/:id', () => {
-  after(cleanTickets);
+  after(cleanCreatedTickets);
 
   it('atualiza um ticket existente (200)', async () => {
-    const created = await request(app).post('/tickets').send(validTicket);
-    const id = created.body.ticket.id;
-    createdTickets.push(id);
+    const id = await createTestTicket();
 
     const res = await request(app).put(`/tickets/${id}`).send({ ...validTicket, title: 'Título atualizado' });
 
@@ -107,8 +119,7 @@ describe('PUT /tickets/:id', () => {
 
 describe('DELETE /tickets/:id', () => {
   it('remove um ticket existente (200) e retorna 404 na segunda chamada', async () => {
-    const created = await request(app).post('/tickets').send(validTicket);
-    const id = created.body.ticket.id;
+    const id = await createTestTicket();
 
     const first = await request(app).delete(`/tickets/${id}`);
     assert.strictEqual(first.status, 200);
