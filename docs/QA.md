@@ -138,8 +138,9 @@ Um release é considerado de qualidade quando:
 | Risco | Impacto | Mitigação |
 | --- | --- | --- |
 | Login sem token JWT (sessão só em `localStorage`) | Sessão não protegida contra manipulação | Documentado; fora do escopo atual |
-| `.env` do backend versionado no repositório | Exposição de credenciais locais | Usar variáveis de ambiente/segredos no CI e no repositório real |
 | Dependência do Postgres local para testes de API | Testes falham sem banco | CI provisiona o banco como serviço |
+
+**Boas práticas aplicadas:** o arquivo `.env` real não é versionado (está no `.gitignore`); apenas o `.env.example` é commitado como template sem segredos reais.
 
 ## 13. Próximas evoluções
 
