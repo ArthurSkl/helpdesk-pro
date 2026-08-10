@@ -1,4 +1,4 @@
-const API_BASE = 'https://helpdesk-pro-api.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function request(endpoint, options = {}) {
   let res
