@@ -118,3 +118,17 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: 123
           PGDATABASE: Help-Desk
+
+      - name: Upload Cypress screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+
+      - name: Upload Cypress videos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos

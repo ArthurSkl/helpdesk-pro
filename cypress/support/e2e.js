@@ -15,3 +15,14 @@
 
 // Import commands.js using ES2015 syntax:
 import './commands'
+
+afterEach(() => {
+  if (Cypress.currentTest.state === 'failed') return
+
+  const testName = Cypress.currentTest.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()
+  cy.screenshot(`teste-${testName}`, {
+    capture: 'viewport',
+    disableTimersAndAnimations: true,
+    timeout: 15000,
+  })
+})
