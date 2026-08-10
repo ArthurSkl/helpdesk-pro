@@ -191,14 +191,11 @@ http://localhost:5173/
 Na raiz do projeto:
 
 ```bash
-npx cypress open
+npm run cy:open    # abre a interface interativa
+npm run cy:run     # executa em modo headless
 ```
 
-Ou no terminal:
-
-```bash
-npx cypress run
-```
+Para rodar os testes de API do backend, veja a seção [Testes automatizados](#testes-automatizados).
 
 > Observação: os testes devem ser executados a partir da raiz do projeto. Para alguns fluxos, o frontend precisa estar ativo durante a execução.
 
@@ -245,9 +242,33 @@ Mostra os detalhes completos de um chamado, incluindo informações operacionais
 
 ## Testes automatizados
 
-O projeto possui estrutura preparada para testes end-to-end com **Cypress**, incluindo organização por cenários, dados mockados e suporte auxiliar para execução dos fluxos principais.
+O projeto possui **69 testes automatizados** distribuídos em três camadas:
 
-A presença de `cypress.config.js`, da pasta `cypress/` com subpastas específicas e do workflow `cypress.yml` indica uma preocupação com qualidade, validação dos fluxos críticos e automação de testes em pipeline.
+| Camada | Ferramenta | Quantidade | Localização |
+| --- | --- | --- | --- |
+| Unidade (controllers) | Node.js `node:test` | 17 | `backend/tests/unit/` |
+| API | Node.js `node:test` + Supertest | 22 | `backend/tests/` |
+| E2E (Cypress) | Cypress | 47 | `cypress/e2e/` |
+
+A estratégia de qualidade está documentada em [`docs/QA.md`](docs/QA.md) (plano de QA, cobertura, CI e gestão de evidências).
+
+### Executar testes de API
+
+Na pasta `backend` (requer PostgreSQL rodando):
+
+```bash
+npm test
+```
+
+### Executar testes E2E
+
+Com backend e frontend ativos, na raiz do projeto:
+
+```bash
+npm run cy:run
+```
+
+Cada execução gera screenshots e vídeos (evidências) em `cypress/screenshots/` e `cypress/videos/`. As evidências selecionadas ficam em `docs/evidencias/`.
 
 ***
 
