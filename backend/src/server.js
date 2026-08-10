@@ -23,8 +23,11 @@ app.use('/tickets', ticketsRoutes);
 app.use('/references', referenceRoutes);
 app.use('/auth', authRoutes);
 
-const PORT = process.env.PORT || 3001;
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
+}
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+module.exports = app;
