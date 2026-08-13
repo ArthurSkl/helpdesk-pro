@@ -97,7 +97,7 @@ HelpDesk Pro - Projeto pessoal/
 ├── package.json
 ├── package-lock.json
 ├── README.md
-├── start project.txt                # Instruções operacionais
+├── START.md                        # Instruções operacionais
 └── vite.config.js                   # Configuração do Vite e proxy
 ```
 
@@ -109,7 +109,7 @@ HelpDesk Pro - Projeto pessoal/
 
 ```bash
 git clone <URL_DO_REPOSITORIO>
-cd "HelpDesk Pro - Projeto pessoal"
+cd helpdesk-pro
 ```
 
 ### 2. Instalar dependências do frontend
@@ -133,7 +133,14 @@ npm install
 
 **Pré-requisito:** PostgreSQL instalado e rodando.
 
-O arquivo `backend/.env` já contém as credenciais padrão:
+Copie o template `backend/.env.example` para `backend/.env`:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+O arquivo `backend/.env` contém as credenciais padrão:
 
 ```env
 PGHOST=localhost
@@ -242,13 +249,13 @@ Mostra os detalhes completos de um chamado, incluindo informações operacionais
 
 ## Testes automatizados
 
-O projeto possui **69 testes automatizados** distribuídos em três camadas:
+O projeto possui **90 testes automatizados** distribuídos em três camadas:
 
 | Camada | Ferramenta | Quantidade | Localização |
 | --- | --- | --- | --- |
 | Unidade (controllers) | Node.js `node:test` | 17 | `backend/tests/unit/` |
 | API | Node.js `node:test` + Supertest | 22 | `backend/tests/` |
-| E2E (Cypress) | Cypress | 47 | `cypress/e2e/` |
+| E2E (Cypress) | Cypress | 51 | `cypress/e2e/` |
 
 A estratégia de qualidade está documentada em [`docs/QA.md`](docs/QA.md) (plano de QA, cobertura, CI e gestão de evidências).
 
