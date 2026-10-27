@@ -1,30 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ticketsApi } from '../api'
-import { useUsuario } from '../hooks/useUsuario'
+import Topbar from '../components/Topbar'
 
 function DashboardSkeleton() {
   return (
     <main className="app dashboard-page" data-cy="dashboard-page">
-      <header className="topbar">
-        <div>
-          <div className="skeleton skeleton-text" style={{ width: 120, marginBottom: 8 }} />
-          <div className="skeleton skeleton-text" style={{ width: 200, height: 24 }} />
-        </div>
-      </header>
+      <div className="dashboard-container">
+        <header className="topbar">
+          <div>
+            <div className="skeleton skeleton-text" style={{ width: 140, marginBottom: 8 }} />
+            <div className="skeleton skeleton-text" style={{ width: 240, height: 28 }} />
+          </div>
+        </header>
 
-      <section className="metrics">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="skeleton skeleton-metric" />
-        ))}
-      </section>
+        <section className="metrics">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton skeleton-metric" />
+          ))}
+        </section>
 
-      <section className="tickets-section">
-        <div className="skeleton skeleton-text" style={{ width: 140, marginBottom: 16 }} />
-        {[1,2,3,4,5].map(i => (
-          <div key={i} className="skeleton skeleton-row" />
-        ))}
-      </section>
+        <section className="tickets-section">
+          <div className="skeleton skeleton-text" style={{ width: 180, marginBottom: 16 }} />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="skeleton skeleton-row" />
+          ))}
+        </section>
+      </div>
     </main>
   )
 }
@@ -35,13 +37,12 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [statusFiltro, setStatusFiltro] = useState('Todos')
-
-  const { getUsuario } = useUsuario()
-  const usuarioLogado = getUsuario()
+  const [busca, setBusca] = useState('')
 
   const carregar = useCallback(() => {
     setLoading(true)
-    ticketsApi.list()
+    ticketsApi
+      .list()
       .then((data) => {
         setTickets(Array.isArray(data) ? data : data.tickets ?? [])
       })
@@ -58,19 +59,34 @@ function DashboardPage() {
     const atendimento = tickets.filter((t) => t.status_name === 'Em Atendimento').length
     const resolvidos = tickets.filter((t) => t.status_name === 'Resolvido').length
     const encerrados = tickets.filter((t) => t.status_name === 'Encerrado').length
+    const total = tickets.length || 1
 
-    return { abertos, atendimento, resolvidos, encerrados }
+    return {
+      abertos,
+      atendimento,
+      resolvidos,
+      encerrados,
+      pctAbertos: Math.round((abertos / total) * 100),
+      pctAtendimento: Math.round((atendimento / total) * 100),
+      pctResolvidos: Math.round((resolvidos / total) * 100),
+      pctEncerrados: Math.round((encerrados / total) * 100),
+    }
   }, [tickets])
 
   const chamadosFiltrados = useMemo(() => {
-    if (statusFiltro === 'Todos') return tickets
-    return tickets.filter((t) => t.status_name === statusFiltro)
-  }, [tickets, statusFiltro])
-
-  const handleLogout = () => {
-    localStorage.removeItem('helpdesk_user')
-    navigate('/login', { state: { message: 'Logout realizado com sucesso' } })
-  }
+    return tickets.filter((t) => {
+      const matchStatus = statusFiltro === 'Todos' || t.status_name === statusFiltro
+      if (!matchStatus) return false
+      if (!busca.trim()) return true
+      const q = busca.toLowerCase()
+      return (
+        t.code?.toLowerCase().includes(q) ||
+        t.title?.toLowerCase().includes(q) ||
+        t.assignee_name?.toLowerCase().includes(q) ||
+        t.category_name?.toLowerCase().includes(q)
+      )
+    })
+  }, [tickets, statusFiltro, busca])
 
   const handleDelete = async (id, e) => {
     e.stopPropagation()
@@ -83,8 +99,19 @@ function DashboardPage() {
     }
   }
 
-  const getStatusClass = (status) => {
+  const toggleCardFilter = (status) => {
+    setStatusFiltro((prev) => (prev === status ? 'Todos' : status))
+  }
+
+  const getStatusClass = (status = '') => {
     return `badge status-${status.toLowerCase().replaceAll(' ', '-')}`
+  }
+
+  const getPriorityClass = (priority = '') => {
+    const p = priority.toLowerCase()
+    if (p.includes('alta') || p.includes('crítica') || p.includes('critica')) return 'prio-pill prio-alta'
+    if (p.includes('média') || p.includes('media')) return 'prio-pill prio-media'
+    return 'prio-pill prio-baixa'
   }
 
   if (loading) return <DashboardSkeleton />
@@ -92,10 +119,14 @@ function DashboardPage() {
   if (error && tickets.length === 0) {
     return (
       <main className="app dashboard-page" data-cy="dashboard-page">
-        <div className="error-state">
-          <div className="error-icon">!</div>
-          <p className="error-text">{error}</p>
-          <button className="btn-new" onClick={carregar}>Tentar novamente</button>
+        <div className="dashboard-container">
+          <div className="error-state">
+            <div className="error-icon">!</div>
+            <p className="error-text">{error}</p>
+            <button className="btn-new" onClick={carregar}>
+              Tentar novamente
+            </button>
+          </div>
         </div>
       </main>
     )
@@ -103,147 +134,209 @@ function DashboardPage() {
 
   return (
     <main className="app dashboard-page" data-cy="dashboard-page">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">HelpDesk Pro</p>
-          <h1 data-cy="dashboard-title">Painel de Chamados</h1>
-        </div>
+      <div className="dashboard-container">
+        <Topbar subtitle="HelpDesk Pro // Operações" title="Painel de Chamados" />
 
-        <div className="topbar-actions">
-          <div className="user-box" data-cy="user-info">
-            <strong>{usuarioLogado?.nome}</strong>
-            <span>{usuarioLogado?.perfil}</span>
-          </div>
-
-          <button
-            className="logout-btn"
-            data-cy="logout-button"
-            onClick={handleLogout}
+        <section className="metrics">
+          <div
+            className={`metric-card metric-warning ${statusFiltro === 'Aberto' ? 'metric-active' : ''}`}
+            data-cy="metric-abertos"
+            onClick={() => toggleCardFilter('Aberto')}
+            title="Clique para filtrar por Abertos"
           >
-            Sair
-          </button>
-        </div>
-      </header>
-
-      <section className="metrics">
-        <div className="metric-card" data-cy="metric-abertos">
-          <span>Abertos</span>
-          <strong>{metricas.abertos}</strong>
-        </div>
-
-        <div className="metric-card" data-cy="metric-atendimento">
-          <span>Em atendimento</span>
-          <strong>{metricas.atendimento}</strong>
-        </div>
-
-        <div className="metric-card" data-cy="metric-resolvidos">
-          <span>Resolvidos</span>
-          <strong>{metricas.resolvidos}</strong>
-        </div>
-
-        <div className="metric-card" data-cy="metric-encerrados">
-          <span>Encerrados</span>
-          <strong>{metricas.encerrados}</strong>
-        </div>
-      </section>
-
-      <section className="tickets-section">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Operação</p>
-            <h2 data-cy="tickets-title">Chamados recentes</h2>
+            <div className="metric-top">
+              <span>Abertos</span>
+              <small className="metric-pct">{metricas.pctAbertos}%</small>
+            </div>
+            <strong>{metricas.abertos}</strong>
+            <div className="metric-bar">
+              <div className="metric-bar-fill" style={{ width: `${metricas.pctAbertos}%` }} />
+            </div>
           </div>
 
-          <div className="filters-row">
-            <div className="filters-box">
-              <label htmlFor="statusFiltro">Filtrar por status</label>
-              <select
-                id="statusFiltro"
-                value={statusFiltro}
-                onChange={(e) => setStatusFiltro(e.target.value)}
-                data-cy="status-filter"
-              >
-                <option>Todos</option>
-                <option>Aberto</option>
-                <option>Em Atendimento</option>
-                <option>Resolvido</option>
-                <option>Encerrado</option>
-              </select>
+          <div
+            className={`metric-card metric-info ${statusFiltro === 'Em Atendimento' ? 'metric-active' : ''}`}
+            data-cy="metric-atendimento"
+            onClick={() => toggleCardFilter('Em Atendimento')}
+            title="Clique para filtrar por Em Atendimento"
+          >
+            <div className="metric-top">
+              <span>Em atendimento</span>
+              <small className="metric-pct">{metricas.pctAtendimento}%</small>
+            </div>
+            <strong>{metricas.atendimento}</strong>
+            <div className="metric-bar">
+              <div className="metric-bar-fill" style={{ width: `${metricas.pctAtendimento}%` }} />
+            </div>
+          </div>
+
+          <div
+            className={`metric-card metric-success ${statusFiltro === 'Resolvido' ? 'metric-active' : ''}`}
+            data-cy="metric-resolvidos"
+            onClick={() => toggleCardFilter('Resolvido')}
+            title="Clique para filtrar por Resolvidos"
+          >
+            <div className="metric-top">
+              <span>Resolvidos</span>
+              <small className="metric-pct">{metricas.pctResolvidos}%</small>
+            </div>
+            <strong>{metricas.resolvidos}</strong>
+            <div className="metric-bar">
+              <div className="metric-bar-fill" style={{ width: `${metricas.pctResolvidos}%` }} />
+            </div>
+          </div>
+
+          <div
+            className={`metric-card metric-neutral ${statusFiltro === 'Encerrado' ? 'metric-active' : ''}`}
+            data-cy="metric-encerrados"
+            onClick={() => toggleCardFilter('Encerrado')}
+            title="Clique para filtrar por Encerrados"
+          >
+            <div className="metric-top">
+              <span>Encerrados</span>
+              <small className="metric-pct">{metricas.pctEncerrados}%</small>
+            </div>
+            <strong>{metricas.encerrados}</strong>
+            <div className="metric-bar">
+              <div className="metric-bar-fill" style={{ width: `${metricas.pctEncerrados}%` }} />
+            </div>
+          </div>
+        </section>
+
+        <section className="tickets-section">
+          <div className="section-header">
+            <div>
+              <p className="eyebrow">Fila de Atendimento</p>
+              <h2 data-cy="tickets-title">Chamados recentes</h2>
             </div>
 
-            <button
-              className="btn-new"
-              onClick={() => navigate('/tickets/new')}
-              data-cy="btn-new-ticket"
-            >
-              + Novo Chamado
-            </button>
-          </div>
-        </div>
+            <div className="filters-row">
+              <div className="search-box">
+                <label htmlFor="buscaChamado">Buscar na fila</label>
+                <input
+                  id="buscaChamado"
+                  type="search"
+                  placeholder="Código, título ou responsável..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  data-cy="search-input"
+                />
+              </div>
 
-        <p className="results-info" data-cy="results-count">
-          {chamadosFiltrados.length} chamado(s) encontrado(s)
-        </p>
-
-        <div className="table-wrapper">
-          <table data-cy="tickets-table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Título</th>
-                <th>Status</th>
-                <th>Prioridade</th>
-                <th>Responsável</th>
-                <th className="th-actions">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chamadosFiltrados.map((chamado, index) => (
-                <tr
-                  key={chamado.id}
-                  data-cy="ticket-row"
-                  className="clickable-row"
-                  style={{ animationDelay: `${index * 0.04}s` }}
-                  onClick={() => navigate(`/tickets/${chamado.id}`)}
+              <div className="filters-box">
+                <label htmlFor="statusFiltro">Filtrar por status</label>
+                <select
+                  id="statusFiltro"
+                  value={statusFiltro}
+                  onChange={(e) => setStatusFiltro(e.target.value)}
+                  data-cy="status-filter"
                 >
-                  <td><strong>{chamado.code}</strong></td>
-                  <td>{chamado.title}</td>
-                  <td>
-                    <span className={getStatusClass(chamado.status_name)}>
-                      {chamado.status_name}
-                    </span>
-                  </td>
-                  <td>{chamado.priority_name}</td>
-                  <td>{chamado.assignee_name}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        className="btn-icon btn-icon-edit"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/tickets/${chamado.id}/edit`)
-                        }}
-                        data-cy="btn-edit"
-                        title="Editar"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="btn-icon btn-icon-delete"
-                        onClick={(e) => handleDelete(chamado.id, e)}
-                        data-cy="btn-delete"
-                        title="Remover"
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </td>
+                  <option>Todos</option>
+                  <option>Aberto</option>
+                  <option>Em Atendimento</option>
+                  <option>Resolvido</option>
+                  <option>Encerrado</option>
+                </select>
+              </div>
+
+              <button
+                className="btn-new"
+                onClick={() => navigate('/tickets/new')}
+                data-cy="btn-new-ticket"
+              >
+                + Novo Chamado
+              </button>
+            </div>
+          </div>
+
+          <div className="results-bar">
+            <p className="results-info" data-cy="results-count">
+              {chamadosFiltrados.length} chamado(s) encontrado(s)
+            </p>
+            {(statusFiltro !== 'Todos' || busca.trim() !== '') && (
+              <button
+                type="button"
+                className="btn-clear-filter"
+                onClick={() => {
+                  setStatusFiltro('Todos')
+                  setBusca('')
+                }}
+              >
+                Limpar filtros ({statusFiltro})
+              </button>
+            )}
+          </div>
+
+          <div className="table-wrapper">
+            <table data-cy="tickets-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Título</th>
+                  <th>Status</th>
+                  <th>Prioridade</th>
+                  <th>Responsável</th>
+                  <th className="th-actions">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {chamadosFiltrados.map((chamado) => (
+                  <tr
+                    key={chamado.id}
+                    data-cy="ticket-row"
+                    className="clickable-row"
+                    onClick={() => navigate(`/tickets/${chamado.id}`)}
+                  >
+                    <td>
+                      <strong className="ticket-code-pill">{chamado.code}</strong>
+                    </td>
+                    <td className="td-title">{chamado.title}</td>
+                    <td>
+                      <span className={getStatusClass(chamado.status_name)}>
+                        {chamado.status_name}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={getPriorityClass(chamado.priority_name)}>
+                        {chamado.priority_name}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="assignee-chip">
+                        <span className="assignee-dot" />
+                        {chamado.assignee_name || 'Não atribuído'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="btn-icon btn-icon-edit"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/tickets/${chamado.id}/edit`)
+                          }}
+                          data-cy="btn-edit"
+                          title="Editar"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="btn-icon btn-icon-delete"
+                          onClick={(e) => handleDelete(chamado.id, e)}
+                          data-cy="btn-delete"
+                          title="Remover"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
