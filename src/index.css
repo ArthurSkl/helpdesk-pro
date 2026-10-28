@@ -14,15 +14,15 @@ html {
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  background: #090b10;
-  color: #f4f4f6;
+  background: #09090b;
+  color: #fafafa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.25);
-  color: #f4f4f6;
+  background: rgba(16, 185, 129, 0.25);
+  color: #fafafa;
 }
 
 ::-webkit-scrollbar {
@@ -31,14 +31,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #090b10;
+  background: #09090b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1f2430;
+  background: #242429;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #3f3f46;
 }
